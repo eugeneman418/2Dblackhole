@@ -5,7 +5,7 @@ from environment_map import EnvironmentMapPolar
 
 class TestEnvironmentMap(unittest.TestCase):
     def setUp(self):
-        self.N = 100
+        self.N = 1000
         self.data = np.random.rand(self.N)
         self.env_map = EnvironmentMapPolar(self.data)
         self.theta_vals = np.linspace(0, 2 * np.pi, self.N+1, endpoint=True)
@@ -16,26 +16,58 @@ class TestEnvironmentMap(unittest.TestCase):
         )
 
     def test_get_value(self):
-        for _ in range(1000):
-            theta = np.random.uniform(0, 2 * np.pi)
-            expected = self.interpolator(theta)
-            actual = self.env_map.get_value(theta)
+        for i in range(self.N+1):
+            theta = (2*np.pi / self.N) * i
+            expected = self.data[ i % self.N]
+            actual = self.env_map.lookup(theta)
             self.assertAlmostEqual(actual, expected)
+    
+    def test_get_value_batch(self):
+        theta = np.arange(self.N+1) * 2*np.pi / self.N
+        expected = self.data[np.arange(self.N+1) % self.N]
+        actual = self.env_map.lookup(theta)
 
-    def test_integrate(self):
-        for _ in range(1000):
-            thetas = np.random.uniform(2*np.pi / self.N * (self.N-1), 2 * np.pi, size=2)
-            theta_start = min(thetas)
-            theta_end = max(thetas)
-            
-            num_points = 10000
-            ts = np.linspace(theta_start, theta_end, num_points)
-            values = self.interpolator(ts)
-            expected = np.trapezoid(values, ts)
+        almost_equal = np.allclose(actual, expected)
+        self.assertTrue(almost_equal)
 
-            actual = self.env_map.integrate(theta_start, theta_end)
+    def test_average(self):
+        expected = np.mean(self.data)
+        actual = self.env_map.integrate(0, 2*np.pi, batched=False)
+        self.assertAlmostEqual(actual, expected, places=3)
 
-            self.assertAlmostEqual(actual, expected, places=4)
+    def test_average_batch(self):
+        batch_size = 100
+        expected = np.mean(self.data) * np.ones(batch_size)
+        actual = self.env_map.integrate(np.zeros(batch_size), 2*np.pi * np.ones(batch_size), batched=True)
+        
+        for i in range(batch_size):
+            self.assertAlmostEqual(expected[i], actual[i], places=3)
+
+        for i in range(batch_size-1):
+            self.assertAlmostEqual(actual[i], actual[i+1], places=3)
+
+    
+    def test_average_wrap_batch(self):
+        batch_size = 100
+        expected = np.mean(self.data) * np.ones(batch_size)
+        actual = self.env_map.integrate(np.ones(batch_size), (1-1e-10)* np.ones(batch_size), batched=True)
+        
+        for i in range(batch_size):
+            self.assertAlmostEqual(expected[i], actual[i], places=3)
+
+        for i in range(batch_size-1):
+            self.assertAlmostEqual(actual[i], actual[i+1], places=3)
+    
+    def test_average_zero_batch(self):
+        batch_size = 100
+        expected = np.zeros(batch_size)
+        actual = self.env_map.integrate(np.ones(batch_size), np.ones(batch_size), batched=True)
+        
+        for i in range(batch_size):
+            self.assertAlmostEqual(expected[i], actual[i], places=3)
+
+        for i in range(batch_size-1):
+            self.assertAlmostEqual(actual[i], actual[i+1], places=3)
             
 if __name__ == '__main__':
     unittest.main()
