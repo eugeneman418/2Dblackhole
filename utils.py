@@ -42,8 +42,8 @@ def draw_arrow(surface, start, end, color=(0, 0, 0), arrow_size=10):
 def draw_environment_map(surface, center, radius, thickness, environment_map, resolution=360):
     angles, step_size = np.linspace(0, 2*np.pi, num=resolution, endpoint=False, retstep=True)
 
-    inner_radius = radius - thickness
-    outer_radius = radius
+    inner_radius = radius
+    outer_radius = radius + thickness
 
     for angle in angles:
         hue = environment_map(angle)
@@ -66,3 +66,44 @@ def draw_environment_map(surface, center, radius, thickness, environment_map, re
         points = [(x1_inner, y1_inner), (x1_outer, y1_outer), (x2_outer, y2_outer), (x2_inner, y2_inner)]
         pygame.gfxdraw.filled_polygon(surface, points, color)
         pygame.gfxdraw.aapolygon(surface, points, color)
+
+
+def line_circle_intersection(start, end, r):
+    """
+    start & end are Nx2 batch of points
+    circle is centered at origin with radius r
+    returns first intersection if there are many
+    returns nan if no intersections
+    """
+
+    dir = end - start
+
+    a = np.sum(dir**2, axis=1)
+    b = 2 * np.sum(start * dir, axis=1)
+    c = np.sum(start**2, axis=1) - r**2
+
+    discriminant = b**2 - 4 * a * c
+
+    result = np.full_like(start, np.nan, dtype=np.float64)
+
+    valid = discriminant >= 0
+    sqrt_disc = np.sqrt(discriminant[valid])
+
+    a_valid = a[valid]
+    b_valid = b[valid]
+    dir_valid = dir[valid]
+    start_valid = start[valid]
+
+    t1 = (-b_valid - sqrt_disc) / (2 * a_valid)
+    t2 = (-b_valid + sqrt_disc) / (2 * a_valid)
+
+    t = np.where((0 <= t1) & (t1 <= 1), t1,
+         np.where((0 <= t2) & (t2 <= 1), t2, np.nan))
+    
+    has_intersection = ~np.isnan(t)
+    idxs = np.nonzero(valid)[0][has_intersection]
+
+    result[idxs] = start_valid[has_intersection] + t[has_intersection, np.newaxis] * dir_valid[has_intersection]
+
+
+    return result

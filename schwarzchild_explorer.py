@@ -7,7 +7,6 @@ import schwarzchild2D
 from environment_map import EnvironmentMapPolar
 
 
-
 pygame.init()
 
 WIDTH, HEIGHT = 1280, 720
@@ -16,8 +15,8 @@ VELOCITY_SCALE = 1e-3
 BLACKHOLE_CENTER = (WIDTH // 2, HEIGHT // 2)
 
 START_TIME, END_TIME = 0, 1e10
-ENVIRONMENT_MAP_RADIUS = min(WIDTH, HEIGHT)//2
 ENVIRONMENT_MAP_THICKNESS = 10
+ENVIRONMENT_MAP_RADIUS = min(WIDTH, HEIGHT)//2 - ENVIRONMENT_MAP_THICKNESS
 ENVIRONMENT_MAP = EnvironmentMapPolar(np.linspace(0,1,num=10000, endpoint=False))
 
 blakchole = schwarzchild2D.Schwarzchild2D(1)
@@ -44,7 +43,7 @@ clock = pygame.time.Clock()
 
 while True:
     screen.fill(WHITE)
-    utils.draw_environment_map(screen, BLACKHOLE_CENTER, ENVIRONMENT_MAP_RADIUS, ENVIRONMENT_MAP_THICKNESS, ENVIRONMENT_MAP.lookup, resolution=1024)
+    utils.draw_environment_map(screen, BLACKHOLE_CENTER, ENVIRONMENT_MAP_RADIUS, ENVIRONMENT_MAP_THICKNESS, ENVIRONMENT_MAP.lookup, resolution=100)
     pygame.gfxdraw.aacircle(screen, BLACKHOLE_CENTER[0], BLACKHOLE_CENTER[1], blackhole_radius_pixels, BLACK)
     pygame.gfxdraw.filled_circle(screen, BLACKHOLE_CENTER[0], BLACKHOLE_CENTER[1], blackhole_radius_pixels, BLACK)
 
@@ -85,7 +84,7 @@ while True:
                 initial_polar_velocity[1]   # v_phi
             ])
             t, trajectory_polar = blakchole.simulate(initial_conditions, start_time=START_TIME, end_time=END_TIME, batched=False)
-            #print("number of steps:", len(t))
+            
             trajectory_cartesian = schwarzchild2D.polar_to_cartesian(trajectory_polar, batched=True)
             trajectory_screen = [utils.blackhole_coords_to_screen_coords(pos, WIDTH, HEIGHT, DISTANCE_SCALE) for pos in trajectory_cartesian]
 
