@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-from utils import line_circle_intersection
 class Schwarzchild2D:
     def __init__(self, M):
         self.M = M
@@ -52,6 +51,9 @@ class Schwarzchild2D:
         
     
     def simulate(self, initial_conditions, start_time, end_time, batched=True, rtol=1e-12, atol=1e-15):
+        """
+        initial_conditions: r0, phi0, v_r0, v_phi0
+        """
         f, y0 = self.get_dynamics(initial_conditions, batched=batched)
         t_span = (start_time, end_time)
         sol = solve_ivp(f, t_span, y0, vectorized=batched, rtol=rtol, atol=atol)
@@ -63,6 +65,8 @@ class Schwarzchild2D:
             print("batched output shape", sol.y.shape)
             y = sol.y.reshape(batch_size, 3, num_steps)
             return sol.t, np.transpose(y, axes=(0, 2, 1))  # batch_size, num_steps, 3
+        
+    
     
     def get_boundary_direction(self, trajectory, boundary_radius, interpolate=True, batched=True):
         if not batched:
@@ -86,7 +90,7 @@ class Schwarzchild2D:
         boundary_phi = np.where(is_valid, boundary_phi, np.nan)
 
         if interpolate:
-            can_interpolate = is_valid & (boundary_idx < r.shape[1]-1) & (r[:,boundary_idx].flatten() != boundary_radius)
+            can_interpolate = is_valid & (boundary_idx < r.shape[1]-1) & (r[np.arange(r.shape[0]),boundary_idx] != boundary_radius)
             interpolation_idx = boundary_idx[can_interpolate]
 
             start = trajectory[:, interpolation_idx, :2].reshape(-1,2)
@@ -165,8 +169,74 @@ def cartesian_jacobian(polar_coords, batched=True):
     jac[:, 1, 1] = r * np.cos(phi)
     return jac if batched else jac[0]
 
+
+def get_boundary_intersection(trajectory, boundary_radius, batched=True):
+        if not batched:
+            trajectory = np.expand_dims(trajectory, axis=0)
+        
+        r = trajectory[:,:,0]
+        phi = trajectory[:,:,1]
+
+        is_less_mask = r <= boundary_radius
+        is_greater_mask = r >= boundary_radius
+        has_less = is_less_mask.any(axis=1)
+        has_greater = is_greater_mask.any(axis=1)
+        is_valid = has_less & has_greater # valid trajectories are ones that crosses boundary, trajactories that gets trapped inevent horizon are not valid
+
+        idx = np.tile(np.arange(r.shape[1]), (r.shape[0],1)) # index matrix
+
+        boundary_idx = np.where(is_less_mask, idx, -1).max(axis=1) # set all indices corresponding to beyond boundary radius to -1, then the max will be the last index before crossing the boundary
+        boundary_idx = np.where(is_valid, boundary_idx, np.nan)
+
+        return boundary_idx if batched else boundary_idx[0]
+
+
+
+def line_circle_intersection(start, end, r):
+    """
+    start & end are Nx2 batch of points
+    circle is centered at origin with radius r
+    returns first intersection if there are many
+    returns nan if no intersections
+    """
+
+    dir = end - start
+
+    a = np.sum(dir**2, axis=1)
+    b = 2 * np.sum(start * dir, axis=1)
+    c = np.sum(start**2, axis=1) - r**2
+
+    discriminant = b**2 - 4 * a * c
+
+    result = np.full_like(start, np.nan, dtype=np.float64)
+
+    valid = discriminant >= 0
+    sqrt_disc = np.sqrt(discriminant[valid])
+
+    a_valid = a[valid]
+    b_valid = b[valid]
+    dir_valid = dir[valid]
+    start_valid = start[valid]
+
+    t1 = (-b_valid - sqrt_disc) / (2 * a_valid)
+    t2 = (-b_valid + sqrt_disc) / (2 * a_valid)
+
+    t = np.where((0 <= t1) & (t1 <= 1), t1,
+         np.where((0 <= t2) & (t2 <= 1), t2, np.nan))
+    
+    has_intersection = ~np.isnan(t)
+    idxs = np.nonzero(valid)[0][has_intersection]
+
+    result[idxs] = start_valid[has_intersection] + t[has_intersection, np.newaxis] * dir_valid[has_intersection]
+
+
+    return result
+
+
+
+
+
 if __name__ == "__main__":
-    # Example usage
     schwarzschild = Schwarzchild2D(M=1)
 
     initial_conditions = np.array([

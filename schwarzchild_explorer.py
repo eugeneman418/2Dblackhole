@@ -43,7 +43,7 @@ clock = pygame.time.Clock()
 
 while True:
     screen.fill(WHITE)
-    utils.draw_environment_map(screen, BLACKHOLE_CENTER, ENVIRONMENT_MAP_RADIUS, ENVIRONMENT_MAP_THICKNESS, ENVIRONMENT_MAP.lookup, resolution=100)
+    utils.draw_halo(screen, BLACKHOLE_CENTER, ENVIRONMENT_MAP_RADIUS, ENVIRONMENT_MAP_THICKNESS, ENVIRONMENT_MAP.lookup, resolution=100)
     pygame.gfxdraw.aacircle(screen, BLACKHOLE_CENTER[0], BLACKHOLE_CENTER[1], blackhole_radius_pixels, BLACK)
     pygame.gfxdraw.filled_circle(screen, BLACKHOLE_CENTER[0], BLACKHOLE_CENTER[1], blackhole_radius_pixels, BLACK)
 

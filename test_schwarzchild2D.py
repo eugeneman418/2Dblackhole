@@ -86,6 +86,34 @@ class TestSchwarzchild(unittest.TestCase):
         
         self.assertAlmostEqual(expected, boundary_direction, places=4)
         
+    def test_line_circle_intersection(self):  
+        start = np.array([
+            [2,-2], # no intersection
+            [0,0], # 1 intersection
+            [0,-2], # 2 intersections
+            [1,-2], # tangent
+        ])
+
+        end = np.array([
+            [2,2],
+            [0,2],
+            [0,2],
+            [1,2],
+        ])
+        
+        r = 1.0
+        result = line_circle_intersection(start, end, r)
+        expected = np.array([
+            [np.nan, np.nan],
+            [0,1],
+            [0, -1],
+            [1,0],
+        ])
+        for i in range(len(expected)):
+            if np.isnan(expected[i]).any():
+                self.assertTrue(np.isnan(result[i]).all())
+            else:
+                np.testing.assert_allclose(result[i], expected[i], rtol=1e-5, atol=1e-8)
 
 if __name__ == '__main__':
     unittest.main()
