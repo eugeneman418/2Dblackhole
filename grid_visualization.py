@@ -61,7 +61,7 @@ clock = pygame.time.Clock()
 
 # ui
 degree_slider_scalar = 10 # 1 increment of slider = degree_slider_scalar degrees
-manager = pygame_gui.UIManager((WIDTH, HEIGHT))
+manager = pygame_gui.UIManager((WIDTH, HEIGHT), theme_path="theme.json")
 degree_slider = pygame_gui.elements.UIHorizontalSlider(
     relative_rect=pygame.Rect((10, 10), (200, 25)),
     start_value=max_degree//degree_slider_scalar,
@@ -75,6 +75,7 @@ degree_label = pygame_gui.elements.UILabel(
     manager=manager
 )
 
+
 depth_slider = pygame_gui.elements.UIHorizontalSlider(
     relative_rect=pygame.Rect((10, 40), (200, 25)),
     start_value=max_depth,
@@ -87,6 +88,7 @@ depth_label = pygame_gui.elements.UILabel(
     text=f"Max Depth: {max_depth}",
     manager=manager
 )
+
 
 grid_point_label = pygame_gui.elements.UILabel(
     relative_rect=pygame.Rect((10, 70), (300, 25)),
