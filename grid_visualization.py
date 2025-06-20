@@ -113,15 +113,15 @@ interpolation_button = pygame_gui.elements.UIButton(
     manager=manager
 )
 
-def visualize_uniform_grid():
+def visualize_uniform_grid(color=GREY):
     for trajectory_polar in uniform_grid.trajectories:
-        utils.draw_trajectory(trajectory_polar, screen, GREY, WIDTH, HEIGHT, DISTANCE_SCALE)
+        utils.draw_trajectory(trajectory_polar, screen, color, WIDTH, HEIGHT, DISTANCE_SCALE)
 
-def visualize_adaptive_grid():
+def visualize_adaptive_grid(color=RED):
     for trajectory_polar in [cell.lower_trajectory for cell in adaptive_grid.leaves]:
-        utils.draw_trajectory(trajectory_polar, screen, GREEN, WIDTH, HEIGHT, DISTANCE_SCALE)
+        utils.draw_trajectory(trajectory_polar, screen, color, WIDTH, HEIGHT, DISTANCE_SCALE)
     
-    utils.draw_trajectory(adaptive_grid.leaves[-1].upper_trajectory, screen, GREEN, WIDTH, HEIGHT, DISTANCE_SCALE)
+    utils.draw_trajectory(adaptive_grid.leaves[-1].upper_trajectory, screen, color, WIDTH, HEIGHT, DISTANCE_SCALE)
 
 def interpolate_hue(phi, grid):
     value = grid.lookup(phi)
@@ -135,11 +135,11 @@ def rebuild_grids():
     num_grid_points = adaptive_grid.build_tree(np.deg2rad(max_degree), max_depth)
     uniform_grid = UniformGrid(blackhole, camera_cartesian, ENVIRONMENT_MAP_RADIUS * DISTANCE_SCALE, num_grid_points=num_grid_points, start_time=START_TIME, end_time=END_TIME)
 
-    print("num grid points", num_grid_points, "number of leaves", len(adaptive_grid.leaves))
-    for cell in adaptive_grid.leaves:
-        print(f"leaf degree {np.rad2deg(cell.span())}, depth {cell.depth}")
-        # print(f"lower value {cell.lower_value}, upper value {cell.upper_value}")
-    print("----------------------------------")
+    # print("num grid points", num_grid_points, "number of leaves", len(adaptive_grid.leaves))
+    # for cell in adaptive_grid.leaves:
+    #     print(f"leaf degree {np.rad2deg(cell.span())}, depth {cell.depth}")
+    #     # print(f"lower value {cell.lower_value}, upper value {cell.upper_value}")
+    # print("----------------------------------")
 
 
 while True:
