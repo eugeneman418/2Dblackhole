@@ -62,50 +62,9 @@ class Schwarzchild2D:
         else:
             num_steps = sol.t.shape[0]
             batch_size = initial_conditions.shape[0]
-            print("batched output shape", sol.y.shape)
             y = sol.y.reshape(batch_size, 3, num_steps)
             return sol.t, np.transpose(y, axes=(0, 2, 1))  # batch_size, num_steps, 3
         
-    
-    
-    def get_boundary_direction(self, trajectory, boundary_radius, interpolate=True, batched=True):
-        if not batched:
-            trajectory = np.expand_dims(trajectory, axis=0)
-        
-        r = trajectory[:,:,0]
-        phi = trajectory[:,:,1]
-
-        is_less_mask = r <= boundary_radius
-        is_greater_mask = r >= boundary_radius
-        has_less = is_less_mask.any(axis=1)
-        has_greater = is_greater_mask.any(axis=1)
-        is_valid = has_less & has_greater # valid trajectories are ones that crosses boundary, trajactories that gets trapped inevent horizon are not valid
-
-        idx = np.tile(np.arange(r.shape[1]), (r.shape[0],1)) # index matrix
-
-        boundary_idx = np.where(is_less_mask, idx, -1).max(axis=1) # set all indices corresponding to beyond boundary radius to -1, then the max will be the last index before crossing the boundary
-
-        boundary_phi = phi[np.arange(phi.shape[0]), boundary_idx]
-
-        boundary_phi = np.where(is_valid, boundary_phi, np.nan)
-
-        if interpolate:
-            can_interpolate = is_valid & (boundary_idx < r.shape[1]-1) & (r[np.arange(r.shape[0]),boundary_idx] != boundary_radius)
-            interpolation_idx = boundary_idx[can_interpolate]
-
-            start = trajectory[:, interpolation_idx, :2].reshape(-1,2)
-            
-            start = polar_to_cartesian(start)
-
-            end = trajectory[:, interpolation_idx+1, :2].reshape(-1,2)
-            end = polar_to_cartesian(end)
-
-            intersection = cartesian_to_polar(line_circle_intersection(start, end, boundary_radius))
-
-            boundary_phi[can_interpolate] = intersection[:,1]
-
-    
-        return boundary_phi if batched else boundary_phi[0]
 
 
 def cartesian_to_polar(cartesian_coords, batched=True):
@@ -185,7 +144,7 @@ def get_boundary_intersection(trajectory, boundary_radius, batched=True):
 
         idx = np.tile(np.arange(r.shape[1]), (r.shape[0],1)) # index matrix
 
-        boundary_idx = np.where(is_less_mask, idx, -1).max(axis=1) # set all indices corresponding to beyond boundary radius to -1, then the max will be the last index before crossing the boundary
+        boundary_idx = np.where(is_greater_mask, idx, r.shape[1]).min(axis=1) # set all indices corresponding to beyond boundary radius to -1, then the max will be the last index before crossing the boundary
         boundary_idx = np.where(is_valid, boundary_idx, np.nan)
 
         return boundary_idx if batched else boundary_idx[0]

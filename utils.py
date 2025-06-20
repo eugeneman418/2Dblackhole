@@ -3,6 +3,7 @@ import math
 import pygame
 import pygame.gfxdraw
 import colorsys
+import schwarzchild2D
 
 def screen_to_blackhole_coords(pos, width, height, scale):
     """
@@ -79,3 +80,8 @@ def draw_halo(surface, center, radius, thickness, environment_map, resolution=36
         pygame.gfxdraw.filled_polygon(surface, points, color)
         pygame.gfxdraw.aapolygon(surface, points, color)
 
+
+def draw_trajectory(trajectory_polar, screen, color, screen_width, screen_height, distance_scale):
+    trajectory_cartesian = schwarzchild2D.polar_to_cartesian(trajectory_polar, batched=True)
+    trajectory_screen = [blackhole_coords_to_screen_coords(pos, screen_width, screen_height, distance_scale) for pos in trajectory_cartesian]
+    pygame.draw.aalines(screen, color, False, trajectory_screen)
